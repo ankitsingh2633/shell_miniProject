@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# =============================================
+#           COLOR AND STYLE DEFINITIONS
+# =============================================
 # More compatible color definitions
 BOLD="\033[1m"
 RESET="\033[0m"
@@ -24,13 +27,18 @@ CARD="💳"
 CALENDAR="📅"
 RECEIPT="🧾"
 
+# =============================================
+#               SYSTEM SETUP
+# =============================================
 USER_DIR="users"
 USER_FILE="$USER_DIR/users_list.txt"
 
 mkdir -p "$USER_DIR"
 touch "$USER_FILE"
 
-
+# =============================================
+#               HELPER FUNCTIONS
+# =============================================
 function divider() {
     echo -e "${BLUE}------------------------------------------------${RESET}"
 }
@@ -46,6 +54,9 @@ function press_any_key() {
     read -n 1 -s
 }
 
+# =============================================
+#               AUTHENTICATION
+# =============================================
 function authenticate() {
     while true; do
         header "FINANCE MANAGEMENT SYSTEM"
@@ -112,6 +123,9 @@ function login() {
     fi
 }
 
+# =============================================
+#               MAIN MENU
+# =============================================
 function main_menu() {
     local username="$1"
     while true; do
@@ -132,113 +146,82 @@ function main_menu() {
     done
 }
 
-# Function to manage users (only accessible to admins)
+# =============================================
+#               USER MANAGEMENT
+# =============================================
 function user_management() {
-    # Store the first argument (username) into current_user
     local current_user="$1"
-
-    # Get the user's role by searching in the USER_FILE and extracting the third field (role)
     local user_role=$(grep "^$current_user:" "$USER_FILE" | cut -d ":" -f3)
 
-    # If the user is not an admin, deny access
     if [ "$user_role" != "admin" ]; then
         echo -e "${CROSS} ${RED}Access denied! Admin privileges required.${RESET}"
-        sleep 1  # Pause for 1 second
-        return   # Exit the function
+        sleep 1
+        return
     fi
 
-    # Start an infinite loop to display the user management menu
     while true; do
-        header "USER MANAGEMENT"  # Display header
+        header "USER MANAGEMENT"
         echo -e "${BOLD}1. ${USER} Add User${RESET}"
         echo -e "${BOLD}2. ${CROSS} Delete User${RESET}"
         echo -e "${BOLD}3. ${GEAR} Modify Roles${RESET}"
         echo -e "${BOLD}4. ${RECEIPT} View Users${RESET}"
         echo -e "${BOLD}5. ${CHECK} Back to Menu${RESET}"
-        divider  # Display a dividing line
-
-        # Read the user's menu choice
+        divider
         read -p "➤ Select option [1-5]: " choice
 
-        # Execute different functions based on the user's choice
         case $choice in
-            1) register ;;       # Call register function to add a user
-            2) delete_user ;;    # Call delete_user function
-            3) modify_user ;;    # Call modify_user function
-            4) view_users ;;     # Call view_users function
-            5) return ;;         # Exit to the main menu
+            1) register ;;
+            2) delete_user ;;
+            3) modify_user ;;
+            4) view_users ;;
+            5) return ;;
             *) echo -e "${RED}Invalid choice!${RESET}"
-               sleep 1 ;;  # Pause for 1 second on invalid input
+               sleep 1 ;;
         esac
     done
 }
 
-# Function to delete a user
 function delete_user() {
-    header "DELETE USER"  # Display header
-
-    # Prompt for the username to delete
+    header "DELETE USER"
     read -p "➤ Enter username to delete: " del_username
 
-    # Check if the username exists in the USER_FILE
     if grep -q "^$del_username:" "$USER_FILE"; then
-        # Remove the user from the USER_FILE
         sed -i "/^$del_username:/d" "$USER_FILE"
-
-        # Delete related files (income, expenses, and budget)
         rm -f "$USER_DIR/${del_username}_income.csv"
         rm -f "$USER_DIR/${del_username}_expenses.csv"
         rm -f "$USER_DIR/${del_username}_budget.txt"
-
-        # Confirm deletion
         echo -e "${CHECK} ${GREEN}User deleted successfully!${RESET}"
     else
-        # If the user does not exist, show an error message
         echo -e "${CROSS} ${RED}User not found!${RESET}"
     fi
-
-    press_any_key  # Wait for user input before returning to menu
+    press_any_key
 }
 
-# Function to modify a user's role
 function modify_user() {
-    header "MODIFY USER ROLE"  # Display header
-
-    # Prompt for the username to modify
+    header "MODIFY USER ROLE"
     read -p "➤ Enter username: " mod_username
 
-    # Check if the username exists in the USER_FILE
     if grep -q "^$mod_username:" "$USER_FILE"; then
-        # Prompt for the new role (admin or user)
         read -p "➤ Enter new role (admin/user): " new_role
-
-        # Modify the user's role in the USER_FILE
-        sed -i "s/^$mod_username:\([^:]\):[^:]/$mod_username:\1:$new_role/" "$USER_FILE"
-
-        # Confirm update
+        sed -i "s/^$mod_username:\([^:]*\):[^:]*/$mod_username:\1:$new_role/" "$USER_FILE"
         echo -e "${CHECK} ${GREEN}Role updated successfully!${RESET}"
     else
-        # If user not found, show error
         echo -e "${CROSS} ${RED}User not found!${RESET}"
     fi
-
-    press_any_key  # Wait for user input before returning to menu
+    press_any_key
 }
 
-# Function to display all registered users
 function view_users() {
-    header "REGISTERED USERS"  # Display header
-
-    # Display column headers
+    header "REGISTERED USERS"
     echo -e "${BOLD}${CYAN}Username            Role${RESET}"
-    divider  # Display dividing line
-
-    # Extract usernames and roles from USER_FILE and format them in columns
+    divider
     cut -d ":" -f1,3 "$USER_FILE" | awk -F ":" '{printf "%-20s %-10s\n", $1, $2}'
-
-    press_any_key  # Wait for user input before returning to menu
+    press_any_key
 }
 
+# =============================================
+#               FINANCE MANAGER
+# =============================================
 function finance_manager() {
     local username="$1"
     local income_file="$USER_DIR/${username}_income.csv"
@@ -344,5 +327,7 @@ function manage_budget() {
     press_any_key
 }
 
+# =============================================
+#               START APPLICATION
+# =============================================
 authenticate
-
